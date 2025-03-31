@@ -2,12 +2,24 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Clipboard Manager</title>
+    <title>Paste Pilot</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <h1>Clipboard Manager</h1>
-    <p>Using Electron <span id="electron-version"></span></p>
+    <div class="container">
+      <h1>Paste Pilot</h1>
+      <div class="search-container">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search clipboard history..."
+        />
+      </div>
+      <div class="history-container" id="historyContainer"></div>
+      <div class="footer">
+        <p>Press Ctrl+Alt+V to show/hide this window</p>
+      </div>
+    </div>
     <script src="renderer.js"></script>
   </body>
 </html>

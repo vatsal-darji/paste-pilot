@@ -23,7 +23,7 @@ const store = new Store({
 let mainWindow;
 let tray = null;
 let clipboardHistory = store.get("history") || [];
-const maxHistoryItems = 20;
+const maxHistoryItems = 30;
 let isPolling = true;
 let lastClipboardContent = "";
 let isWindowFocused = false;

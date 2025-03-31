@@ -1,15 +1,28 @@
 {
-  "name": "linux-clipboard-manager",
+  "name": "Paste-Pilot",
   "version": "1.0.0",
   "description": "A very minimal clipboard manager for linux.",
   "main": "./src/main/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder"
   },
-  "author": "Vatsal Darji",
+  "build": {
+    "productName": "Paste Pilot",
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "maintainer": "vatsaldarji11@gmail.com"
+    }
+  },
+  "author":{"name": "Vatsal Darji", "email" : "vatsaldarji11@gmail.com"}
   "license": "MIT",
   "devDependencies": {
-    "electron": "^35.1.2"
+    "electron": "^35.1.2",
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

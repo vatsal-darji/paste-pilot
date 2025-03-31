@@ -33,7 +33,7 @@ const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 350,
     height: 400,
-    icon: path.join(__dirname, "../../clipboard.png"),
+    icon: path.join(__dirname, "../assets/clipboard.png"),
     webPreferences: {
       preload: path.join(__dirname, "../preload/preload.js"),
       nodeIntegration: false,
@@ -72,7 +72,7 @@ const createWindow = () => {
 
 // Create system tray icon
 const createTray = () => {
-  tray = new Tray(path.join(__dirname, "../../clipboard.png"));
+  tray = new Tray(path.join(__dirname, "../assets/clipboard.png"));
 
   const contextMenu = Menu.buildFromTemplate([
     {

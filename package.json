@@ -18,7 +18,7 @@
       "maintainer": "vatsaldarji11@gmail.com"
     }
   },
-  "author":{"name": "Vatsal Darji", "email" : "vatsaldarji11@gmail.com"}
+  "author":{"name": "Vatsal Darji", "email" : "vatsaldarji11@gmail.com"},
   "license": "MIT",
   "devDependencies": {
     "electron": "^35.1.2",

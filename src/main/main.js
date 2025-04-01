@@ -7,6 +7,7 @@ const {
   globalShortcut,
   ipcMain,
   screen,
+  nativeImage,
 } = require("electron");
 const path = require("path");
 const Store = require("electron-store");
@@ -138,9 +139,11 @@ function showWindowAtCursor() {
 function startPollingClipboard() {
   try {
     lastClipboardContent = clipboard.readText();
+    lastClipboardImage = clipboard.readImage();
   } catch (error) {
     console.error("Error reading initial clipboard content:", error);
     lastClipboardContent = "";
+    lastClipboardImage = null;
   }
 
   // Check clipboard at regular intervals
@@ -151,12 +154,16 @@ function startPollingClipboard() {
       // Force clipboard refresh to ensure we get the latest content
       // This is important for detecting clipboard changes from other applications
       let currentContent = "";
-      try {
-        currentContent = clipboard.readText("clipboard");
-      } catch (e) {
-        // Sometimes readText may fail, try alternative approach
-        currentContent = clipboard.readText();
-      }
+
+      currentContent = clipboard.readText("clipboard");
+      let currentImage = clipboard.readImage();
+      let hasImageContent = !currentImage.isEmpty(); //has image content
+
+      // Determine if image has changed
+      let hasImageChanged =
+        hasImageContent &&
+        (!lastClipboardImage ||
+          currentImage.toDataURL() !== lastClipboardImage.toDataURL());
 
       // Only update if content has changed and isn't empty
       if (currentContent && currentContent !== lastClipboardContent) {
@@ -166,14 +173,16 @@ function startPollingClipboard() {
         );
 
         lastClipboardContent = currentContent;
+        lastClipboardImage = null; //reset the image when the text is detected
 
         // Avoid duplicates by removing any existing identical entry
         clipboardHistory = clipboardHistory.filter(
-          (item) => item.text !== currentContent
+          (item) => item.type !== "text" || item.text !== currentContent
         );
 
         // Add new item to the beginning of the array
         clipboardHistory.unshift({
+          type: "text",
           text: currentContent,
           timestamp: Date.now(),
         });
@@ -183,6 +192,26 @@ function startPollingClipboard() {
           clipboardHistory = clipboardHistory.slice(0, maxHistoryItems);
         }
 
+        // Save to store
+        store.set("history", clipboardHistory);
+
+        // Update renderer
+        if (mainWindow) {
+          mainWindow.webContents.send("history-updated", clipboardHistory);
+        }
+      } else if (hasImageContent && hasImageChanged) {
+        lastClipboardImage = currentImage;
+        lastClipboardContent = ""; //reset text when image is copied
+
+        //convert image to base64 for display and storage
+        const base64Image = currentImage.toPNG().toString("base64");
+
+        //add to history
+        clipboardHistory.unshift({
+          type: "image",
+          ImageData: base64Image,
+          timestamp: Date.now(),
+        });
         // Save to store
         store.set("history", clipboardHistory);
 
@@ -208,9 +237,29 @@ function setupIPCHandlers() {
   ipcMain.handle("get-clipboard-history", () => clipboardHistory);
 
   // Set clipboard content
-  ipcMain.on("set-clipboard", (event, text) => {
-    clipboard.writeText(text);
-    lastClipboardContent = text; // Update last known content to prevent re-adding
+  ipcMain.on("set-clipboard", (event, item) => {
+    if (typeof item === "object" && item.type) {
+      if (item.type === "text" && item.text) {
+        clipboard.writeText(item.text);
+        lastClipboardContent = item.text;
+        lastClipboardImage = null;
+      } else if (item.type === "image" && item.ImageData) {
+        try {
+          const buffer = Buffer.from(item.ImageData, "base64");
+          const image = nativeImage.createFromBuffer(buffer);
+          clipboard.writeImage(image);
+          lastClipboardImage = image;
+          lastClipboardContent = "";
+        } catch (error) {
+          console.error("Failed to set image clipboard:", error);
+        }
+      }
+    } else if (typeof item === "string") {
+      // Legacy support for text-only
+      clipboard.writeText(item);
+      lastClipboardContent = item;
+      lastClipboardImage = null;
+    }
   });
 
   // Delete item from history

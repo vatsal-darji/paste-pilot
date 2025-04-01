@@ -28,22 +28,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   function filterHistory(history, searchTerm) {
     if (!searchTerm) return history;
     searchTerm = searchTerm.toLowerCase();
-    return history.filter((item) =>
-      item.text.toLowerCase().includes(searchTerm)
-    );
+    return history.filter((item) => {
+      if (item.type === "text") {
+        return item.text && item.text.toLowerCase().includes(searchTerm);
+      }
+      // Images can't be searched by content, only by timestamp
+      return false;
+    });
   }
 
   // Render clipboard history items
   function renderHistory(history) {
     historyContainer.innerHTML = "";
 
-    if (history.length === 0) {
+    if (!history || history.length === 0) {
       historyContainer.innerHTML =
-        '<div class="clipboard-item">No clipboard history yet.</div>';
+        '<div class="empty-history">No clipboard history yet.</div>';
       return;
     }
 
     history.forEach((item, index) => {
+      // Skip empty or invalid items
+      if (
+        !item ||
+        !item.type ||
+        (item.type === "text" && (!item.text || item.text.trim() === "")) ||
+        (item.type === "image" && !item.ImageData)
+      ) {
+        return;
+      }
+
       const clipboardItem = document.createElement("div");
       clipboardItem.className = "clipboard-item";
 
@@ -51,27 +65,53 @@ document.addEventListener("DOMContentLoaded", async () => {
       const date = new Date(item.timestamp);
       const formattedDate = date.toLocaleString();
 
-      clipboardItem.innerHTML = `
-        <div class="clipboard-content">${escapeHTML(item.text)}</div>
-        <div class="clipboard-meta">
-          <div class="clipboard-time">${formattedDate}</div>
-          <div class="clipboard-actions">
-            <button class="copy-btn" data-index="${index}">Copy</button>
-            <button class="delete-btn" data-index="${index}">Delete</button>
+      if (item.type === "text") {
+        clipboardItem.innerHTML = `
+          <div class="clipboard-content text-content">${escapeHTML(
+            item.text
+          )}</div>
+          <div class="clipboard-meta">
+            <div class="clipboard-time">${formattedDate}</div>
+            <div class="clipboard-actions">
+              <button class="copy-btn" data-index="${index}">Copy</button>
+              <button class="delete-btn" data-index="${index}">Delete</button>
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } else if (item.type === "image" && item.ImageData) {
+        clipboardItem.innerHTML = `
+          <div class="clipboard-content image-content">
+            <img src="data:image/png;base64,${item.ImageData}" alt="Clipboard image" />
+          </div>
+          <div class="clipboard-meta">
+            <div class="clipboard-time">${formattedDate}</div>
+            <div class="clipboard-actions">
+              <button class="copy-btn" data-index="${index}">Copy</button>
+              <button class="delete-btn" data-index="${index}">Delete</button>
+            </div>
+          </div>
+        `;
+      }
 
       historyContainer.appendChild(clipboardItem);
     });
+
+    // If all items were invalid and nothing was rendered
+    if (historyContainer.children.length === 0) {
+      historyContainer.innerHTML =
+        '<div class="empty-history">No valid clipboard items found.</div>';
+      return;
+    }
 
     // Add click event for copy button
     document.querySelectorAll(".copy-btn").forEach((button) => {
       button.addEventListener("click", (e) => {
         e.stopPropagation();
         const index = parseInt(e.target.dataset.index);
-        window.clipboardAPI.setClipboard(history[index].text);
-        showNotification("Copied to clipboard");
+        if (index >= 0 && index < history.length) {
+          window.clipboardAPI.setClipboard(history[index]);
+          showNotification("Copied to clipboard");
+        }
       });
     });
 
@@ -80,15 +120,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       button.addEventListener("click", (e) => {
         e.stopPropagation();
         const index = parseInt(e.target.dataset.index);
-        window.clipboardAPI.deleteItem(index);
+        if (index >= 0 && index < history.length) {
+          window.clipboardAPI.deleteItem(index);
+        }
       });
     });
 
     // Click on item to copy
-    document.querySelectorAll(".clipboard-item").forEach((item, index) => {
+    document.querySelectorAll(".clipboard-item").forEach((item, idx) => {
       item.addEventListener("click", () => {
-        if (history[index]) {
-          window.clipboardAPI.setClipboard(history[index].text);
+        const index = Array.from(historyContainer.children).indexOf(item);
+        if (index >= 0 && index < history.length) {
+          window.clipboardAPI.setClipboard(history[index]);
           showNotification("Copied to clipboard");
         }
       });
@@ -97,6 +140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Helper to escape HTML to prevent XSS
   function escapeHTML(str) {
+    if (typeof str !== "string") return "";
     return str
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")

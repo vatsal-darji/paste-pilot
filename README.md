@@ -63,7 +63,7 @@ npm run build
 
 ## Screenshots
 
-![Paste Pilot Screenshot]<img src="paste-pilot.png" alt="Paste Pilot screenshot" width="100"/>
+<img src="paste-pilot.png" alt="Paste Pilot screenshot" height="500" width="500"/>
 
 ## Development
 

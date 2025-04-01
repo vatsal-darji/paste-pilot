@@ -25,11 +25,11 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "electron": "^35.1.2",
+    "electron": "^24.8.8",
     "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
-    "electron-store": "^10.0.1"
+    "electron-store": "^8.1.0"
   }
 }

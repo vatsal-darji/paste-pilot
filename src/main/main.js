@@ -9,7 +9,7 @@ const {
   screen,
 } = require("electron");
 const path = require("path");
-const Store = require("electron-store").default;
+const Store = require("electron-store");
 
 // Initialize store for saving clipboard history
 const store = new Store({
@@ -29,7 +29,7 @@ let lastClipboardContent = "";
 let isWindowFocused = false;
 
 // Create the main application window
-const createWindow = () => {
+function createWindow() {
   mainWindow = new BrowserWindow({
     width: 350,
     height: 400,
@@ -68,10 +68,10 @@ const createWindow = () => {
     }
     return true;
   });
-};
+}
 
 // Create system tray icon
-const createTray = () => {
+function createTray() {
   tray = new Tray(path.join(__dirname, "../assets/clipboard.png"));
 
   const contextMenu = Menu.buildFromTemplate([
@@ -104,9 +104,9 @@ const createTray = () => {
   tray.on("click", () => {
     mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
   });
-};
+}
 
-const showWindowAtCursor = () => {
+function showWindowAtCursor() {
   if (!mainWindow) return;
 
   // Get cursor position
@@ -132,10 +132,10 @@ const showWindowAtCursor = () => {
   mainWindow.setPosition(x, y);
   mainWindow.show();
   mainWindow.focus(); // Ensure window is focused
-};
+}
 
 // Start monitoring clipboard for changes
-const startPollingClipboard = () => {
+function startPollingClipboard() {
   try {
     lastClipboardContent = clipboard.readText();
   } catch (error) {
@@ -200,10 +200,10 @@ const startPollingClipboard = () => {
   };
 
   checkClipboard();
-};
+}
 
 // IPC Handlers
-const setupIPCHandlers = () => {
+function setupIPCHandlers() {
   // Get initial history
   ipcMain.handle("get-clipboard-history", () => clipboardHistory);
 
@@ -219,7 +219,7 @@ const setupIPCHandlers = () => {
     store.set("history", clipboardHistory);
     mainWindow.webContents.send("history-updated", clipboardHistory);
   });
-};
+}
 
 // Register global shortcut
 function registerShortcuts() {
